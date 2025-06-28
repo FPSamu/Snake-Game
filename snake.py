@@ -1,7 +1,14 @@
+"""
+Snake Game
+Author: Samu
+Description: Classic Snake game built with Pygame. The player controls the snake's head and must eat apples to grow. The game ends if the snake collides with itself.
+"""
+
 import pygame
 import random
 
 class Apple:
+    """Represents a segment of the snake's body."""
     def __init__(self, pos_X, pos_Y):
         self.pos_X = pos_X
         self.pos_Y = pos_Y
@@ -15,7 +22,7 @@ class Node:
         self.prev_Y = pos_Y
 
     def update_position(self):
-        # Guarda la posición actual como "previa"
+        """Updates this node's position to follow its parent node."""
         self.prev_X = self.pos_X
         self.prev_Y = self.pos_Y
 
@@ -64,6 +71,7 @@ class Node:
             self.pos_X = self.parent.pos_X
 
 def check_eat(node):
+    """Checks if the snake's head has eaten an apple. If so, adds a new segment and removes the apple."""
     if (node.pos_X, node.pos_Y) in apples_cords:
         tail = body[-1]
         body.append(Node(parent=tail, pos_X=tail.pos_X, pos_Y=tail.pos_Y))
@@ -78,6 +86,31 @@ def check_eat(node):
                 i += 1
         return True
     else: return False
+
+def generate_apple():
+    """Generates a new apple at a random position not currently occupied by the snake."""
+    apple_X = random.randint(1, (screen_width - 1)//node_size)*node_size
+    apple_Y = random.randint(1, (screen_height - 1)//node_size)*node_size
+
+    while (apple_X, apple_Y) in apples_cords:
+        apple_X = random.randint(1, (screen_width - 1)//node_size)*node_size
+        apple_Y = random.randint(1, (screen_height - 1)//node_size)*node_size
+
+    apples_cords.append((apple_X, apple_Y))
+
+    apples.append(Apple(
+        pos_X=apple_X, 
+        pos_Y=apple_Y
+    ))
+
+def check_colision():
+    """Checks if the snake's head has collided with its own body."""
+    if len(body) > 2: 
+        head = (body[0].pos_X, body[0].pos_Y)
+        for node in body[1:]:
+            if (node.pos_X, node.pos_Y) == head:
+                return True
+        else: return False
 
 pygame.init()
 
@@ -108,29 +141,6 @@ limit_apples = 3
 apples = list()
 apples_cords = list()
 
-def generate_apple():
-    apple_X = random.randint(1, (screen_width - 1)//node_size)*node_size
-    apple_Y = random.randint(1, (screen_height - 1)//node_size)*node_size
-
-    while (apple_X, apple_Y) in apples_cords:
-        apple_X = random.randint(1, (screen_width - 1)//node_size)*node_size
-        apple_Y = random.randint(1, (screen_height - 1)//node_size)*node_size
-
-    apples_cords.append((apple_X, apple_Y))
-
-    apples.append(Apple(
-        pos_X=apple_X, 
-        pos_Y=apple_Y
-    ))
-
-def check_colision():
-    if len(body) > 2: 
-        head = (body[0].pos_X, body[0].pos_Y)
-        for node in body[1:]:
-            if (node.pos_X, node.pos_Y) == head:
-                return True
-        else: return False
-
 for i in range(limit_apples):
     generate_apple()
 
@@ -149,6 +159,7 @@ while running:
     for node in body:
         node.update_position()
 
+    # Update direction if it's valid
     if next_direction:
         if (direction == "UP" and next_direction != "DOWN") or \
         (direction == "DOWN" and next_direction != "UP") or \
@@ -156,7 +167,8 @@ while running:
         (direction == "RIGHT" and next_direction != "LEFT") or \
         direction == "":
             direction = next_direction
-            
+           
+    # Move snake head     
     if direction == "DOWN":
         body[0].move_down()
     elif direction == "UP":
@@ -166,15 +178,18 @@ while running:
     elif direction == "RIGHT":
         body[0].move_right()
     
+    # Draw snake
     for node in body:
         if node.parent == None:
             pygame.draw.rect(screen, YELLOW, (node.pos_X, node.pos_Y, node_size, node_size))
         else:
             pygame.draw.rect(screen, GREEN, (node.pos_X, node.pos_Y, node_size, node_size))
 
+    # Check if apple was eaten
     if check_eat(body[0]):
         generate_apple()
     
+    # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
